@@ -257,6 +257,8 @@ pub struct Parser<'a> {
     options: ParserOptions,
     /// ensure the stack does not overflow by limiting recursion depth
     recursion_counter: RecursionCounter,
+    /// locations (source map)
+    locations: Vec<Location>,
 }
 
 impl<'a> Parser<'a> {
@@ -282,6 +284,7 @@ impl<'a> Parser<'a> {
             dialect,
             recursion_counter: RecursionCounter::new(DEFAULT_REMAINING_DEPTH),
             options: ParserOptions::default(),
+            locations: vec![],
         }
     }
 
@@ -5242,14 +5245,16 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a simple one-word identifier (possibly quoted, possibly a keyword)
-    pub fn parse_identifier(&mut self) -> Result<Ident, ParserError> {
+    pub fn parse_identifier(&mut self) -> Result<Node<Ident>, ParserError> {
         let next_token = self.next_token();
-        match next_token.token {
-            Token::Word(w) => Ok(w.to_ident()),
-            Token::SingleQuotedString(s) => Ok(Ident::with_quote('\'', s)),
-            Token::DoubleQuotedString(s) => Ok(Ident::with_quote('\"', s)),
-            _ => self.expected("identifier", next_token),
-        }
+        let ident = match next_token.token {
+            Token::Word(w) => w.to_ident(),
+            Token::SingleQuotedString(s) => Ident::with_quote('\'', s),
+            Token::DoubleQuotedString(s) => Ident::with_quote('\"', s),
+            _ => self.expected("identifier", next_token)?,
+        };
+        self.locations.push(next_token.location);
+        Ok(Node::new(ident, self.locations.len() as u32))
     }
 
     /// Parse a parenthesized comma-separated list of unqualified, possibly quoted identifiers
@@ -7474,7 +7479,7 @@ impl<'a> Parser<'a> {
         // [ OWNED BY { table_name.column_name | NONE } ]
         let owned_by = if self.parse_keywords(&[Keyword::OWNED, Keyword::BY]) {
             if self.parse_keywords(&[Keyword::NONE]) {
-                Some(ObjectName(vec![Ident::new("NONE")]))
+                Some(ObjectName(vec![Node::new(Ident::new("NONE"))]))
             } else {
                 Some(self.parse_object_name()?)
             }

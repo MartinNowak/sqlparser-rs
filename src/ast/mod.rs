@@ -18,6 +18,7 @@ use alloc::{
     vec::Vec,
 };
 use core::fmt::{self, Display};
+use core::ops::Deref;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -63,6 +64,29 @@ mod value;
 
 #[cfg(feature = "visitor")]
 mod visitor;
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+pub struct Node<T>
+{
+    elem: T,
+    id: u32,
+}
+
+impl<T> Node<T> {
+    pub fn new(elem: T, id: u32) -> Self {
+        Self { elem, id }
+    }
+}
+
+impl<T> Deref for Node<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.elem
+    }
+}
 
 struct DisplaySeparated<'a, T>
 where
