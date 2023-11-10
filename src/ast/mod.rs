@@ -19,6 +19,8 @@ use alloc::{
     vec::Vec,
 };
 use core::fmt::{self, Display};
+#[cfg(feature = "ast_nodes")]
+use core::ops::{Deref, DerefMut};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -67,6 +69,75 @@ mod value;
 
 #[cfg(feature = "visitor")]
 mod visitor;
+
+/// AST Node with unique id
+/// IDs are assigned sequentially in depth-first order to associate information such a location and types in dense arrays
+/// IDs are unique per parser instance
+#[cfg(feature = "ast_nodes")]
+#[derive(Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct Node<T> {
+    id: NodeID,
+    elem: T,
+}
+
+#[cfg(feature = "ast_nodes")]
+#[derive(Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub(crate) struct NodeID(u32);
+
+#[cfg(feature = "ast_nodes")]
+impl NodeID {
+    pub(crate) fn next(&mut self) {
+        self.0 += 1;
+    }
+}
+
+/// Deref Coercion to use AST nodes in lieu of unwrapped AST elements
+#[cfg(feature = "ast_nodes")]
+impl<T> Deref for Node<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.elem
+    }
+}
+
+#[cfg(feature = "ast_nodes")]
+impl<T> DerefMut for Node<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.elem
+    }
+}
+
+#[cfg(feature = "ast_nodes")]
+#[macro_export]
+/// compatibility macro for access to node element
+macro_rules! node_elem {
+    ($e:expr) => {
+        $e.elem
+    };
+}
+
+#[cfg(feature = "ast_nodes")]
+impl<T: fmt::Display> fmt::Display for Node<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.elem.fmt(f)
+    }
+}
+
+/// noop type alias with disabled ast nodes
+#[cfg(not(feature = "ast_nodes"))]
+pub(crate) type Node<T> = T;
+
+#[cfg(not(feature = "ast_nodes"))]
+#[macro_export]
+/// compatibility macro for access to node element
+macro_rules! node_elem {
+    ($e:expr) => {
+        $e
+    };
+}
+
+pub(crate) use node_elem;
 
 struct DisplaySeparated<'a, T>
 where
