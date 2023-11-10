@@ -260,6 +260,9 @@ pub struct Parser<'a> {
     tokens: Vec<TokenWithLocation>,
     /// The index of the first unprocessed token in `self.tokens`
     index: usize,
+    /// node_id sequence
+    #[cfg(feature = "ast_nodes")]
+    node_id: NodeID,
     /// The current dialect to use
     dialect: &'a dyn Dialect,
     /// Additional options that allow you to mix & match behavior
@@ -290,6 +293,8 @@ impl<'a> Parser<'a> {
         Self {
             tokens: vec![],
             index: 0,
+            #[cfg(feature = "ast_nodes")]
+            node_id: NodeID::default(),
             dialect,
             recursion_counter: RecursionCounter::new(DEFAULT_REMAINING_DEPTH),
             options: ParserOptions::default(),
@@ -2800,6 +2805,14 @@ impl<'a> Parser<'a> {
             format!("Expected {expected}, found: {found}"),
             found.location
         )
+    }
+
+    /// Get the current token location
+    #[cfg(feature = "ast_nodes")]
+    pub(crate) fn current_location(&self) -> Location {
+        self.tokens
+            .get(self.index)
+            .map_or(Location { line: 0, column: 0 }, |t| t.location)
     }
 
     /// If the current token is the `expected` keyword, consume it and returns
@@ -9513,9 +9526,71 @@ impl<'a> Parser<'a> {
         Ok(partitions)
     }
 
-    /// Consume the parser and return its underlying token buffer
+   /// Consume the parser and return its underlying token buffer
     pub fn into_tokens(self) -> Vec<TokenWithLocation> {
         self.tokens
+    }
+
+    fn node<T, F>(&mut self, f: F) -> Result<Node<T>, ParserError>
+    where
+        F: FnOnce(&mut Parser) -> Result<T, ParserError>,
+        T: fmt::Display,
+    {
+        self.node_with_loc(f, self.peek_token().location)
+    }
+
+    fn node_with_loc<T, F>(&mut self, f: F, loc: Location) -> Result<Node<T>, ParserError>
+    where
+        F: FnOnce(&mut Parser) -> Result<T, ParserError>,
+        T: fmt::Display,
+    {
+        #[allow(clippy::let_unit_value)]
+        let node_id = self.beg_node(loc);
+        let elem = f(self)?;
+        Ok(self.end_node(node_id, elem, self.current_location()))
+    }
+
+    fn node_with_locs<T, F>(
+        &mut self,
+        f: F,
+        beg: Location,
+        end: Location,
+    ) -> Result<Node<T>, ParserError>
+    where
+        F: FnOnce(&mut Parser) -> Result<T, ParserError>,
+        T: fmt::Display,
+    {
+        #[allow(clippy::let_unit_value)]
+        let node_id = self.beg_node(beg);
+        let elem = f(self)?;
+        Ok(self.end_node(node_id, elem, end))
+    }
+
+    #[cfg(feature = "ast_nodes")]
+    fn beg_node(&mut self, _loc: Location) -> NodeID {
+        let res = self.node_id.clone();
+        self.node_id.next();
+        res
+    }
+
+    #[cfg(feature = "ast_nodes")]
+    fn end_node<T: fmt::Display>(&self, node_id: NodeID, elem: T, _loc: Location) -> Node<T> {
+        Node { id: node_id, elem }
+    }
+
+    #[cfg(not(feature = "ast_nodes"))]
+    fn beg_node(&mut self, _loc: Location) {
+    }
+
+    #[cfg(not(feature = "ast_nodes"))]
+    fn end_node<T: fmt::Display>(&self, _node_id: (), elem: T, _loc: Location) -> T {
+        elem
+    }
+
+    fn current_location(&self) -> Location {
+        self.tokens
+            .get(self.index)
+            .map_or(Location { line: 0, column: 0 }, |t| t.location)
     }
 }
 
