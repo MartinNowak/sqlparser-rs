@@ -549,7 +549,8 @@ impl<'a> Tokenizer<'a> {
 
     /// Tokenize the statement and produce a vector of tokens
     pub fn tokenize(&mut self) -> Result<Vec<Token>, TokenizerError> {
-        let twl = self.tokenize_with_location()?;
+        let mut twl = self.tokenize_with_location()?;
+        twl.pop(); // pop EOF location token
         Ok(twl.into_iter().map(|t| t.token).collect())
     }
 
@@ -578,6 +579,11 @@ impl<'a> Tokenizer<'a> {
 
             location = state.location();
         }
+        // explicit EOF token to provide end location of last AST node
+        buf.push(TokenWithLocation {
+            token: Token::EOF,
+            location,
+        });
         Ok(())
     }
 
@@ -2225,6 +2231,7 @@ mod tests {
             TokenWithLocation::new(Token::Whitespace(Whitespace::Newline), 1, 10),
             TokenWithLocation::new(Token::Whitespace(Whitespace::Space), 2, 1),
             TokenWithLocation::new(Token::make_word("b", None), 2, 2),
+            TokenWithLocation::new(Token::EOF, 2, 3),
         ];
         compare(expected, tokens);
     }
