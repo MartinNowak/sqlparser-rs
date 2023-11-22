@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "visitor")]
 use sqlparser_derive::{Visit, VisitMut};
 
-use super::{Expr, Ident, Password};
+use super::{Expr, Ident, Password, Node};
 use crate::ast::{display_separated, ObjectName};
 
 /// An option in `ROLE` statement.
@@ -34,7 +34,7 @@ use crate::ast::{display_separated, ObjectName};
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum RoleOption {
     BypassRLS(bool),
-    ConnectionLimit(Expr),
+    ConnectionLimit(Node<Expr>),
     CreateDB(bool),
     CreateRole(bool),
     Inherit(bool),
@@ -42,7 +42,7 @@ pub enum RoleOption {
     Password(Password),
     Replication(bool),
     SuperUser(bool),
-    ValidUntil(Expr),
+    ValidUntil(Node<Expr>),
 }
 
 impl fmt::Display for RoleOption {
@@ -100,7 +100,7 @@ impl fmt::Display for RoleOption {
 pub enum SetConfigValue {
     Default,
     FromCurrent,
-    Value(Expr),
+    Value(Node<Expr>),
 }
 
 /// RESET config option:

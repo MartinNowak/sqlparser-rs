@@ -76,13 +76,13 @@ mod visitor;
 #[cfg(feature = "ast_nodes")]
 #[derive(Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct Node<T> {
-    id: NodeID,
-    elem: T,
+    pub id: NodeID,
+    pub elem: T,
 }
 
 #[cfg(feature = "ast_nodes")]
 #[derive(Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub(crate) struct NodeID(u32);
+pub struct NodeID(u32);
 
 #[cfg(feature = "ast_nodes")]
 impl NodeID {
@@ -138,6 +138,9 @@ macro_rules! node_elem {
 }
 
 pub(crate) use node_elem;
+
+// short-hand for Node
+type N<T> = Node<T>;
 
 struct DisplaySeparated<'a, T>
 where
@@ -256,7 +259,7 @@ impl fmt::Display for ObjectName {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct Array {
     /// The list of expressions between brackets
-    pub elem: Vec<Expr>,
+    pub elem: Vec<N<Expr>>,
 
     /// `true` for  `ARRAY[..]`, `false` for `[..]`
     pub named: bool,
@@ -285,7 +288,7 @@ impl fmt::Display for Array {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct Interval {
-    pub value: Box<Expr>,
+    pub value: Box<N<Expr>>,
     pub leading_field: Option<DateTimeField>,
     pub leading_precision: Option<u64>,
     pub last_field: Option<DateTimeField>,
@@ -464,116 +467,116 @@ pub enum Expr {
     CompoundIdentifier(Vec<Ident>),
     /// JSON access (postgres)  eg: data->'tags'
     JsonAccess {
-        left: Box<Expr>,
+        left: Box<N<Expr>>,
         operator: JsonOperator,
-        right: Box<Expr>,
+        right: Box<N<Expr>>,
     },
     /// CompositeAccess (postgres) eg: SELECT (information_schema._pg_expandarray(array['i','i'])).n
     CompositeAccess {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         key: Ident,
     },
     /// `IS FALSE` operator
-    IsFalse(Box<Expr>),
+    IsFalse(Box<N<Expr>>),
     /// `IS NOT FALSE` operator
-    IsNotFalse(Box<Expr>),
+    IsNotFalse(Box<N<Expr>>),
     /// `IS TRUE` operator
-    IsTrue(Box<Expr>),
+    IsTrue(Box<N<Expr>>),
     /// `IS NOT TRUE` operator
-    IsNotTrue(Box<Expr>),
+    IsNotTrue(Box<N<Expr>>),
     /// `IS NULL` operator
-    IsNull(Box<Expr>),
+    IsNull(Box<N<Expr>>),
     /// `IS NOT NULL` operator
-    IsNotNull(Box<Expr>),
+    IsNotNull(Box<N<Expr>>),
     /// `IS UNKNOWN` operator
-    IsUnknown(Box<Expr>),
+    IsUnknown(Box<N<Expr>>),
     /// `IS NOT UNKNOWN` operator
-    IsNotUnknown(Box<Expr>),
+    IsNotUnknown(Box<N<Expr>>),
     /// `IS DISTINCT FROM` operator
-    IsDistinctFrom(Box<Expr>, Box<Expr>),
+    IsDistinctFrom(Box<N<Expr>>, Box<N<Expr>>),
     /// `IS NOT DISTINCT FROM` operator
-    IsNotDistinctFrom(Box<Expr>, Box<Expr>),
+    IsNotDistinctFrom(Box<N<Expr>>, Box<N<Expr>>),
     /// `[ NOT ] IN (val1, val2, ...)`
     InList {
-        expr: Box<Expr>,
-        list: Vec<Expr>,
+        expr: Box<N<Expr>>,
+        list: Vec<N<Expr>>,
         negated: bool,
     },
     /// `[ NOT ] IN (SELECT ...)`
     InSubquery {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         subquery: Box<Query>,
         negated: bool,
     },
     /// `[ NOT ] IN UNNEST(array_expression)`
     InUnnest {
-        expr: Box<Expr>,
-        array_expr: Box<Expr>,
+        expr: Box<N<Expr>>,
+        array_expr: Box<N<Expr>>,
         negated: bool,
     },
     /// `<expr> [ NOT ] BETWEEN <low> AND <high>`
     Between {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         negated: bool,
-        low: Box<Expr>,
-        high: Box<Expr>,
+        low: Box<N<Expr>>,
+        high: Box<N<Expr>>,
     },
     /// Binary operation e.g. `1 + 1` or `foo > bar`
     BinaryOp {
-        left: Box<Expr>,
+        left: Box<N<Expr>>,
         op: BinaryOperator,
-        right: Box<Expr>,
+        right: Box<N<Expr>>,
     },
     /// `[NOT] LIKE <pattern> [ESCAPE <escape_character>]`
     Like {
         negated: bool,
-        expr: Box<Expr>,
-        pattern: Box<Expr>,
+        expr: Box<N<Expr>>,
+        pattern: Box<N<Expr>>,
         escape_char: Option<char>,
     },
     /// `ILIKE` (case-insensitive `LIKE`)
     ILike {
         negated: bool,
-        expr: Box<Expr>,
-        pattern: Box<Expr>,
+        expr: Box<N<Expr>>,
+        pattern: Box<N<Expr>>,
         escape_char: Option<char>,
     },
     /// SIMILAR TO regex
     SimilarTo {
         negated: bool,
-        expr: Box<Expr>,
-        pattern: Box<Expr>,
+        expr: Box<N<Expr>>,
+        pattern: Box<N<Expr>>,
         escape_char: Option<char>,
     },
     /// MySQL: RLIKE regex or REGEXP regex
     RLike {
         negated: bool,
-        expr: Box<Expr>,
-        pattern: Box<Expr>,
+        expr: Box<N<Expr>>,
+        pattern: Box<N<Expr>>,
         // true for REGEXP, false for RLIKE (no difference in semantics)
         regexp: bool,
     },
     /// `ANY` operation e.g. `foo > ANY(bar)`, comparison operator is one of `[=, >, <, =>, =<, !=]`
     AnyOp {
-        left: Box<Expr>,
+        left: Box<N<Expr>>,
         compare_op: BinaryOperator,
-        right: Box<Expr>,
+        right: Box<N<Expr>>,
     },
     /// `ALL` operation e.g. `foo > ALL(bar)`, comparison operator is one of `[=, >, <, =>, =<, !=]`
     AllOp {
-        left: Box<Expr>,
+        left: Box<N<Expr>>,
         compare_op: BinaryOperator,
-        right: Box<Expr>,
+        right: Box<N<Expr>>,
     },
     /// Unary operation e.g. `NOT foo`
     UnaryOp {
         op: UnaryOperator,
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
     },
     /// CONVERT a value to a different data type or character encoding. e.g. `CONVERT(foo USING utf8mb4)`
     Convert {
         /// The expression to convert
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         /// The target data type
         data_type: Option<DataType>,
         /// The target character encoding
@@ -583,7 +586,7 @@ pub enum Expr {
     },
     /// `CAST` an expression to a different data type e.g. `CAST(foo AS VARCHAR(123))`
     Cast {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         data_type: DataType,
         // Optional CAST(string_expression AS type FORMAT format_string_expression) as used by BigQuery
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#formatting_syntax
@@ -592,7 +595,7 @@ pub enum Expr {
     /// `TRY_CAST` an expression to a different data type e.g. `TRY_CAST(foo AS VARCHAR(123))`
     //  this differs from CAST in the choice of how to implement invalid conversions
     TryCast {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         data_type: DataType,
         // Optional CAST(string_expression AS type FORMAT format_string_expression) as used by BigQuery
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#formatting_syntax
@@ -602,7 +605,7 @@ pub enum Expr {
     //  only available for BigQuery: https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-and-operators#safe_casting
     //  this works the same as `TRY_CAST`
     SafeCast {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         data_type: DataType,
         // Optional CAST(string_expression AS type FORMAT format_string_expression) as used by BigQuery
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#formatting_syntax
@@ -610,7 +613,7 @@ pub enum Expr {
     },
     /// AT a timestamp to a different timezone e.g. `FROM_UNIXTIME(0) AT TIME ZONE 'UTC-06:00'`
     AtTimeZone {
-        timestamp: Box<Expr>,
+        timestamp: Box<N<Expr>>,
         time_zone: String,
     },
     /// Extract a field from a timestamp e.g. `EXTRACT(MONTH FROM foo)`
@@ -621,28 +624,28 @@ pub enum Expr {
     /// ```
     Extract {
         field: DateTimeField,
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
     },
     /// ```sql
     /// CEIL(<expr> [TO DateTimeField])
     /// ```
     Ceil {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         field: DateTimeField,
     },
     /// ```sql
     /// FLOOR(<expr> [TO DateTimeField])
     /// ```
     Floor {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         field: DateTimeField,
     },
     /// ```sql
     /// POSITION(<expr> in <expr>)
     /// ```
     Position {
-        expr: Box<Expr>,
-        r#in: Box<Expr>,
+        expr: Box<N<Expr>>,
+        r#in: Box<N<Expr>>,
     },
     /// ```sql
     /// SUBSTRING(<expr> [FROM <expr>] [FOR <expr>])
@@ -652,9 +655,9 @@ pub enum Expr {
     /// SUBSTRING(<expr>, <expr>, <expr>)
     /// ```
     Substring {
-        expr: Box<Expr>,
-        substring_from: Option<Box<Expr>>,
-        substring_for: Option<Box<Expr>>,
+        expr: Box<N<Expr>>,
+        substring_from: Option<Box<N<Expr>>>,
+        substring_for: Option<Box<N<Expr>>>,
 
         /// false if the expression is represented using the `SUBSTRING(expr [FROM start] [FOR len])` syntax
         /// true if the expression is represented using the `SUBSTRING(expr, start, len)` syntax
@@ -667,20 +670,20 @@ pub enum Expr {
     /// TRIM(<expr>, [, characters]) -- only Snowflake or Bigquery
     /// ```
     Trim {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         // ([BOTH | LEADING | TRAILING]
         trim_where: Option<TrimWhereField>,
-        trim_what: Option<Box<Expr>>,
-        trim_characters: Option<Vec<Expr>>,
+        trim_what: Option<Box<N<Expr>>>,
+        trim_characters: Option<Vec<N<Expr>>>,
     },
     /// ```sql
     /// OVERLAY(<expr> PLACING <expr> FROM <expr>[ FOR <expr> ]
     /// ```
     Overlay {
-        expr: Box<Expr>,
-        overlay_what: Box<Expr>,
-        overlay_from: Box<Expr>,
-        overlay_for: Option<Box<Expr>>,
+        expr: Box<N<Expr>>,
+        overlay_what: Box<N<Expr>>,
+        overlay_from: Box<N<Expr>>,
+        overlay_for: Option<Box<N<Expr>>>,
     },
     /// `expr COLLATE collation`
     Collate {
@@ -688,7 +691,7 @@ pub enum Expr {
         collation: ObjectName,
     },
     /// Nested expression e.g. `(foo > bar)` or `(1)`
-    Nested(Box<Expr>),
+    Nested(Box<N<Expr>>),
     /// A literal value, such as string, number, date or NULL
     Value(Value),
     /// <https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html>
@@ -708,15 +711,15 @@ pub enum Expr {
     /// parsed as [`ArrayIndex`](Self::ArrayIndex) or [`MapAccess`](Self::MapAccess)
     /// <https://clickhouse.com/docs/en/sql-reference/data-types/map/>
     MapAccess {
-        column: Box<Expr>,
-        keys: Vec<Expr>,
+        column: Box<N<Expr>>,
+        keys: Vec<N<Expr>>,
     },
     /// Scalar function call e.g. `LEFT(foo, 5)`
     Function(Function),
     /// Aggregate function with filter
     AggregateExpressionWithFilter {
-        expr: Box<Expr>,
-        filter: Box<Expr>,
+        expr: Box<N<Expr>>,
+        filter: Box<N<Expr>>,
     },
     /// `CASE [<operand>] WHEN <condition> THEN <result> ... [ELSE <result>] END`
     ///
@@ -724,10 +727,10 @@ pub enum Expr {
     /// not `< 0` nor `1, 2, 3` as allowed in a `<simple when clause>` per
     /// <https://jakewheat.github.io/sql-overview/sql-2011-foundation-grammar.html#simple-when-clause>
     Case {
-        operand: Option<Box<Expr>>,
-        conditions: Vec<Expr>,
-        results: Vec<Expr>,
-        else_result: Option<Box<Expr>>,
+        operand: Option<Box<N<Expr>>>,
+        conditions: Vec<N<Expr>>,
+        results: Vec<N<Expr>>,
+        else_result: Option<Box<N<Expr>>>,
     },
     /// An exists expression `[ NOT ] EXISTS(SELECT ...)`, used in expressions like
     /// `WHERE [ NOT ] EXISTS (SELECT ...)`.
@@ -745,13 +748,13 @@ pub enum Expr {
     /// The `ARRAY_AGG` function `SELECT ARRAY_AGG(... ORDER BY ...)`
     ArrayAgg(ArrayAgg),
     /// The `GROUPING SETS` expr.
-    GroupingSets(Vec<Vec<Expr>>),
+    GroupingSets(Vec<Vec<N<Expr>>>),
     /// The `CUBE` expr.
-    Cube(Vec<Vec<Expr>>),
+    Cube(Vec<Vec<N<Expr>>>),
     /// The `ROLLUP` expr.
-    Rollup(Vec<Vec<Expr>>),
+    Rollup(Vec<Vec<N<Expr>>>),
     /// ROW / TUPLE a single value, such as `SELECT (1, 2)`
-    Tuple(Vec<Expr>),
+    Tuple(Vec<N<Expr>>),
     /// `BigQuery` specific `Struct` literal expression [1]
     /// Syntax:
     /// ```sql
@@ -760,7 +763,7 @@ pub enum Expr {
     /// [1]: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#struct_type
     Struct {
         /// Struct values.
-        values: Vec<Expr>,
+        values: Vec<N<Expr>>,
         /// Struct field definitions.
         fields: Vec<StructField>,
     },
@@ -772,7 +775,7 @@ pub enum Expr {
     /// ```
     /// [1]: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#struct_type
     Named {
-        expr: Box<Expr>,
+        expr: Box<N<Expr>>,
         name: Ident,
     },
     /// `DuckDB` specific `Struct` literal expression [1]
@@ -785,8 +788,8 @@ pub enum Expr {
     Dictionary(Vec<DictionaryField>),
     /// An array index expression e.g. `(ARRAY[1, 2])[1]` or `(current_schemas(FALSE))[1]`
     ArrayIndex {
-        obj: Box<Expr>,
-        indexes: Vec<Expr>,
+        obj: Box<N<Expr>>,
+        indexes: Vec<N<Expr>>,
     },
     /// An array expression e.g. `ARRAY[1, 2]`
     Array(Array),
@@ -846,6 +849,8 @@ impl fmt::Display for Expr {
             Expr::Identifier(s) => write!(f, "{s}"),
             Expr::MapAccess { column, keys } => {
                 write!(f, "{column}")?;
+                #[cfg(feature = "ast_nodes")]
+                let keys = keys.iter().map(|n| &n.elem);
                 for k in keys {
                     match k {
                         k @ Expr::Value(Value::Number(_, _)) => write!(f, "[{k}]")?,
@@ -1323,7 +1328,7 @@ impl Display for WindowType {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct WindowSpec {
     /// `OVER (PARTITION BY ...)`
-    pub partition_by: Vec<Expr>,
+    pub partition_by: Vec<N<Expr>>,
     /// `OVER (ORDER BY ...)`
     pub order_by: Vec<OrderByExpr>,
     /// `OVER (window frame)`
@@ -1440,9 +1445,9 @@ pub enum WindowFrameBound {
     /// `CURRENT ROW`
     CurrentRow,
     /// `<N> PRECEDING` or `UNBOUNDED PRECEDING`
-    Preceding(Option<Box<Expr>>),
+    Preceding(Option<Box<N<Expr>>>),
     /// `<N> FOLLOWING` or `UNBOUNDED FOLLOWING`.
-    Following(Option<Box<Expr>>),
+    Following(Option<Box<N<Expr>>>),
 }
 
 impl fmt::Display for WindowFrameBound {
@@ -1522,7 +1527,7 @@ impl fmt::Display for CommentObject {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum Password {
-    Password(Expr),
+    Password(N<Expr>),
     NullPassword,
 }
 
@@ -1797,7 +1802,7 @@ pub enum Statement {
     Analyze {
         #[cfg_attr(feature = "visitor", visit(with = "visit_relation"))]
         table_name: ObjectName,
-        partitions: Option<Vec<Expr>>,
+        partitions: Option<Vec<N<Expr>>>,
         for_columns: bool,
         columns: Vec<Ident>,
         cache_metadata: bool,
@@ -1811,7 +1816,7 @@ pub enum Statement {
     Truncate {
         #[cfg_attr(feature = "visitor", visit(with = "visit_relation"))]
         table_name: ObjectName,
-        partitions: Option<Vec<Expr>>,
+        partitions: Option<Vec<N<Expr>>>,
         /// TABLE - optional keyword;
         table: bool,
     },
@@ -1851,7 +1856,7 @@ pub enum Statement {
         /// A SQL query that specifies what to insert
         source: Option<Box<Query>>,
         /// partitioned insert (Hive)
-        partitioned: Option<Vec<Expr>>,
+        partitioned: Option<Vec<N<Expr>>>,
         /// Columns defined after PARTITION
         after_columns: Vec<Ident>,
         /// whether the insert has the table keyword (Hive)
@@ -1948,7 +1953,7 @@ pub enum Statement {
         /// Table which provide value to be set
         from: Option<TableWithJoins>,
         /// WHERE
-        selection: Option<Expr>,
+        selection: Option<N<Expr>>,
         /// RETURNING
         returning: Option<Vec<SelectItem>>,
     },
@@ -1963,13 +1968,13 @@ pub enum Statement {
         /// USING (Snowflake, Postgres, MySQL)
         using: Option<Vec<TableWithJoins>>,
         /// WHERE
-        selection: Option<Expr>,
+        selection: Option<N<Expr>>,
         /// RETURNING
         returning: Option<Vec<SelectItem>>,
         /// ORDER BY (MySQL)
         order_by: Vec<OrderByExpr>,
         /// LIMIT (MySQL)
-        limit: Option<Expr>,
+        limit: Option<N<Expr>>,
     },
     /// ```sql
     /// CREATE VIEW
@@ -2069,7 +2074,7 @@ pub enum Statement {
         if_not_exists: bool,
         include: Vec<Ident>,
         nulls_distinct: Option<bool>,
-        predicate: Option<Expr>,
+        predicate: Option<N<Expr>>,
     },
     /// ```sql
     /// CREATE ROLE
@@ -2087,8 +2092,8 @@ pub enum Statement {
         create_db: Option<bool>,
         create_role: Option<bool>,
         replication: Option<bool>,
-        connection_limit: Option<Expr>,
-        valid_until: Option<Expr>,
+        connection_limit: Option<N<Expr>>,
+        valid_until: Option<N<Expr>>,
         in_role: Vec<Ident>,
         in_group: Vec<Ident>,
         role: Vec<Ident>,
@@ -2142,7 +2147,7 @@ pub enum Statement {
         /// The name to bind to the newly attached database
         schema_name: Ident,
         /// An expression that indicates the path to the database file
-        database_file_name: Expr,
+        database_file_name: N<Expr>,
         /// true if the syntax is 'ATTACH DATABASE', false if it's just 'ATTACH'
         database: bool,
     },
@@ -2263,7 +2268,7 @@ pub enum Statement {
         local: bool,
         hivevar: bool,
         variable: ObjectName,
-        value: Vec<Expr>,
+        value: Vec<N<Expr>>,
     },
     /// ```sql
     /// SET TIME ZONE <value>
@@ -2271,7 +2276,7 @@ pub enum Statement {
     ///
     /// Note: this is a PostgreSQL-specific statements
     /// `SET TIME ZONE <value>` is an alias for `SET timezone TO <value>` in PostgreSQL
-    SetTimeZone { local: bool, value: Expr },
+    SetTimeZone { local: bool, value: N<Expr> },
     /// ```sql
     /// SET NAMES 'charset_name' [COLLATE 'collation_name']
     /// ```
@@ -2481,8 +2486,8 @@ pub enum Statement {
     /// ASSERT <condition> [AS <message>]
     /// ```
     Assert {
-        condition: Expr,
-        message: Option<Expr>,
+        condition: N<Expr>,
+        message: Option<N<Expr>>,
     },
     /// ```sql
     /// GRANT privileges ON objects TO grantees
@@ -2517,8 +2522,8 @@ pub enum Statement {
     /// Note: this is a PostgreSQL-specific statement.
     Execute {
         name: Ident,
-        parameters: Vec<Expr>,
-        using: Vec<Expr>,
+        parameters: Vec<N<Expr>>,
+        using: Vec<N<Expr>>,
     },
     /// ```sql
     /// PREPARE name [ ( data_type [, ...] ) ] AS statement
@@ -2590,7 +2595,7 @@ pub enum Statement {
         // Specifies the table or subquery to join with the target table
         source: TableFactor,
         // Specifies the expression on which to join the target table and source
-        on: Box<Expr>,
+        on: Box<N<Expr>>,
         // Specifies the actions to perform when values match or do not match.
         clauses: Vec<MergeClause>,
     },
@@ -4348,7 +4353,7 @@ pub struct DoUpdate {
     /// Column assignments
     pub assignments: Vec<Assignment>,
     /// WHERE
-    pub selection: Option<Expr>,
+    pub selection: Option<N<Expr>>,
 }
 
 impl fmt::Display for OnInsert {
@@ -4606,7 +4611,7 @@ impl fmt::Display for GrantObjects {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct Assignment {
     pub id: Vec<Ident>,
-    pub value: Expr,
+    pub value: N<Expr>,
 }
 
 impl fmt::Display for Assignment {
@@ -4619,7 +4624,7 @@ impl fmt::Display for Assignment {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum FunctionArgExpr {
-    Expr(Expr),
+    Expr(N<Expr>),
     /// Qualified wildcard, e.g. `alias.*` or `schema.table.*`.
     QualifiedWildcard(ObjectName),
     /// An unqualified `*`
@@ -4716,7 +4721,7 @@ pub struct Function {
     pub name: ObjectName,
     pub args: Vec<FunctionArg>,
     /// e.g. `x > 5` in `COUNT(x) FILTER (WHERE x > 5)`
-    pub filter: Option<Box<Expr>>,
+    pub filter: Option<Box<N<Expr>>>,
     // Snowflake/MSSQL supports diffrent options for null treatment in rank functions
     pub null_treatment: Option<NullTreatment>,
     pub over: Option<WindowType>,
@@ -4820,8 +4825,8 @@ impl fmt::Display for FileFormat {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct ListAgg {
     pub distinct: bool,
-    pub expr: Box<Expr>,
-    pub separator: Option<Box<Expr>>,
+    pub expr: Box<N<Expr>>,
+    pub separator: Option<Box<N<Expr>>>,
     pub on_overflow: Option<ListAggOnOverflow>,
     pub within_group: Vec<OrderByExpr>,
 }
@@ -4862,7 +4867,7 @@ pub enum ListAggOnOverflow {
 
     /// `ON OVERFLOW TRUNCATE [ <filler> ] WITH[OUT] COUNT`
     Truncate {
-        filler: Option<Box<Expr>>,
+        filler: Option<Box<N<Expr>>>,
         with_count: bool,
     },
 }
@@ -4896,9 +4901,9 @@ impl fmt::Display for ListAggOnOverflow {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct ArrayAgg {
     pub distinct: bool,
-    pub expr: Box<Expr>,
+    pub expr: Box<N<Expr>>,
     pub order_by: Option<Vec<OrderByExpr>>,
-    pub limit: Option<Box<Expr>>,
+    pub limit: Option<Box<N<Expr>>>,
     pub within_group: bool, // order by is used inside a within group or not
 }
 
@@ -5093,8 +5098,8 @@ impl fmt::Display for DescribeAlias {
 #[allow(clippy::large_enum_variant)]
 pub enum HiveIOFormat {
     IOF {
-        input_format: Expr,
-        output_format: Expr,
+        input_format: N<Expr>,
+        output_format: N<Expr>,
     },
     FileFormat {
         format: FileFormat,
@@ -5212,7 +5217,7 @@ impl fmt::Display for TransactionModifier {
 pub enum ShowStatementFilter {
     Like(String),
     ILike(String),
-    Where(Expr),
+    Where(N<Expr>),
 }
 
 impl fmt::Display for ShowStatementFilter {
@@ -5463,12 +5468,12 @@ impl fmt::Display for CopyLegacyCsvOption {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum MergeClause {
     MatchedUpdate {
-        predicate: Option<Expr>,
+        predicate: Option<N<Expr>>,
         assignments: Vec<Assignment>,
     },
-    MatchedDelete(Option<Expr>),
+    MatchedDelete(Option<N<Expr>>),
     NotMatched {
-        predicate: Option<Expr>,
+        predicate: Option<N<Expr>>,
         columns: Vec<Ident>,
         values: Values,
     },
@@ -5670,7 +5675,7 @@ pub struct OperateFunctionArg {
     pub mode: Option<ArgMode>,
     pub name: Option<Ident>,
     pub data_type: DataType,
-    pub default_expr: Option<Expr>,
+    pub default_expr: Option<N<Expr>>,
 }
 
 impl OperateFunctionArg {
@@ -5786,7 +5791,7 @@ pub struct CreateFunctionBody {
     /// Note that Hive's `AS class_name` is also parsed here.
     pub as_: Option<FunctionDefinition>,
     /// RETURN expression
-    pub return_: Option<Expr>,
+    pub return_: Option<N<Expr>>,
     /// USING ... (Hive only)
     pub using: Option<CreateFunctionUsing>,
 }
@@ -5841,7 +5846,7 @@ impl fmt::Display for CreateFunctionUsing {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct MacroArg {
     pub name: Ident,
-    pub default_expr: Option<Expr>,
+    pub default_expr: Option<N<Expr>>,
 }
 
 impl MacroArg {
@@ -5868,7 +5873,7 @@ impl fmt::Display for MacroArg {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum MacroDefinition {
-    Expr(Expr),
+    Expr(N<Expr>),
     Table(Query),
 }
 

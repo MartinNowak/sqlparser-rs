@@ -23,7 +23,7 @@ mod redshift;
 mod snowflake;
 mod sqlite;
 
-use crate::ast::{Expr, Statement};
+use crate::ast::{Expr, Statement, Node};
 use core::any::{Any, TypeId};
 use core::fmt::Debug;
 use core::iter::Peekable;
@@ -157,7 +157,7 @@ pub trait Dialect: Debug + Any {
     fn parse_infix(
         &self,
         _parser: &mut Parser,
-        _expr: &Expr,
+        _expr: &Node<Expr>,
         _precedence: u8,
     ) -> Option<Result<Expr, ParserError>> {
         // return None to fall back to the default behavior

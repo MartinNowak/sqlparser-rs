@@ -137,7 +137,7 @@ impl TestedDialects {
             .run_parser_method(sql, |parser| parser.parse_expr())
             .unwrap();
         assert_eq!(canonical, &ast.to_string());
-        ast
+        node_elem!(ast)
     }
 
     /// Ensures that `sql` parses as a single [Statement], and that

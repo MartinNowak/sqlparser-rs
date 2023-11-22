@@ -51,7 +51,7 @@ impl Dialect for MySqlDialect {
     fn parse_infix(
         &self,
         parser: &mut crate::parser::Parser,
-        expr: &crate::ast::Expr,
+        expr: &crate::ast::Node<crate::ast::Expr>,
         _precedence: u8,
     ) -> Option<Result<crate::ast::Expr, ParserError>> {
         // Parse DIV as an operator

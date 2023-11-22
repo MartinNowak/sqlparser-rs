@@ -35,10 +35,10 @@ pub struct Query {
     /// ORDER BY
     pub order_by: Vec<OrderByExpr>,
     /// `LIMIT { <N> | ALL }`
-    pub limit: Option<Expr>,
+    pub limit: Option<N<Expr>>,
 
     /// `LIMIT { <N> } BY { <expr>,<expr>,... } }`
-    pub limit_by: Vec<Expr>,
+    pub limit_by: Vec<N<Expr>>,
 
     /// `OFFSET <N> [ { ROW | ROWS } ]`
     pub offset: Option<Offset>,
@@ -230,21 +230,21 @@ pub struct Select {
     /// LATERAL VIEWs
     pub lateral_views: Vec<LateralView>,
     /// WHERE
-    pub selection: Option<Expr>,
+    pub selection: Option<N<Expr>>,
     /// GROUP BY
     pub group_by: GroupByExpr,
     /// CLUSTER BY (Hive)
-    pub cluster_by: Vec<Expr>,
+    pub cluster_by: Vec<N<Expr>>,
     /// DISTRIBUTE BY (Hive)
-    pub distribute_by: Vec<Expr>,
+    pub distribute_by: Vec<N<Expr>>,
     /// SORT BY (Hive)
-    pub sort_by: Vec<Expr>,
+    pub sort_by: Vec<N<Expr>>,
     /// HAVING
-    pub having: Option<Expr>,
+    pub having: Option<N<Expr>>,
     /// WINDOW AS
     pub named_window: Vec<NamedWindowDefinition>,
     /// QUALIFY (Snowflake)
-    pub qualify: Option<Expr>,
+    pub qualify: Option<N<Expr>>,
     /// BigQuery syntax: `SELECT AS VALUE | SELECT AS STRUCT`
     pub value_table_mode: Option<ValueTableMode>,
 }
@@ -324,7 +324,7 @@ impl fmt::Display for Select {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct LateralView {
     /// LATERAL VIEW
-    pub lateral_view: Expr,
+    pub lateral_view: N<Expr>,
     /// LATERAL VIEW table name
     pub lateral_view_name: ObjectName,
     /// LATERAL VIEW optional column aliases
@@ -440,9 +440,9 @@ impl fmt::Display for Cte {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum SelectItem {
     /// Any expression, not followed by `[ AS ] alias`
-    UnnamedExpr(Expr),
+    UnnamedExpr(N<Expr>),
     /// An expression, followed by `[ AS ] alias`
-    ExprWithAlias { expr: Expr, alias: Ident },
+    ExprWithAlias { expr: N<Expr>, alias: Ident },
     /// `alias.*` or even `schema.table.*`
     QualifiedWildcard(ObjectName, WildcardAdditionalOptions),
     /// An unqualified `*`
@@ -650,7 +650,7 @@ impl fmt::Display for ReplaceSelectItem {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct ReplaceSelectElement {
-    pub expr: Expr,
+    pub expr: N<Expr>,
     pub column_name: Ident,
     pub as_keyword: bool,
 }
@@ -721,7 +721,7 @@ pub enum TableFactor {
         /// whereas it's `None` in the case of a regular table name.
         args: Option<Vec<FunctionArg>>,
         /// MSSQL-specific `WITH (...)` hints such as NOLOCK.
-        with_hints: Vec<Expr>,
+        with_hints: Vec<N<Expr>>,
         /// Optional version qualifier to facilitate table time-travel, as
         /// supported by BigQuery and MSSQL.
         version: Option<TableVersion>,
@@ -735,7 +735,7 @@ pub enum TableFactor {
     },
     /// `TABLE(<expr>)[ AS <alias> ]`
     TableFunction {
-        expr: Expr,
+        expr: N<Expr>,
         alias: Option<TableAlias>,
     },
     /// `e.g. LATERAL FLATTEN(<args>)[ AS <alias> ]`
@@ -757,7 +757,7 @@ pub enum TableFactor {
     /// ```
     UNNEST {
         alias: Option<TableAlias>,
-        array_exprs: Vec<Expr>,
+        array_exprs: Vec<N<Expr>>,
         with_offset: bool,
         with_offset_alias: Option<Ident>,
     },
@@ -803,7 +803,7 @@ pub enum TableFactor {
     /// See <https://docs.snowflake.com/en/sql-reference/constructs/pivot>
     Pivot {
         table: Box<TableFactor>,
-        aggregate_function: Expr, // Function expression
+        aggregate_function: N<Expr>, // Function expression
         value_column: Vec<Ident>,
         pivot_values: Vec<Value>,
         alias: Option<TableAlias>,
@@ -1002,7 +1002,7 @@ impl fmt::Display for TableAlias {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum TableVersion {
-    ForSystemTimeAsOf(Expr),
+    ForSystemTimeAsOf(N<Expr>),
 }
 
 impl Display for TableVersion {
@@ -1136,7 +1136,7 @@ pub enum JoinOperator {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum JoinConstraint {
-    On(Expr),
+    On(N<Expr>),
     Using(Vec<Ident>),
     Natural,
     None,
@@ -1147,7 +1147,7 @@ pub enum JoinConstraint {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct OrderByExpr {
-    pub expr: Expr,
+    pub expr: N<Expr>,
     /// Optional `ASC` or `DESC`
     pub asc: Option<bool>,
     /// Optional `NULLS FIRST` or `NULLS LAST`
@@ -1175,7 +1175,7 @@ impl fmt::Display for OrderByExpr {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct Offset {
-    pub value: Expr,
+    pub value: N<Expr>,
     pub rows: OffsetRows,
 }
 
@@ -1212,7 +1212,7 @@ impl fmt::Display for OffsetRows {
 pub struct Fetch {
     pub with_ties: bool,
     pub percent: bool,
-    pub quantity: Option<Expr>,
+    pub quantity: Option<N<Expr>>,
 }
 
 impl fmt::Display for Fetch {
@@ -1293,7 +1293,7 @@ pub enum Distinct {
     Distinct,
 
     /// DISTINCT ON({column names})
-    On(Vec<Expr>),
+    On(Vec<N<Expr>>),
 }
 
 impl fmt::Display for Distinct {
@@ -1325,7 +1325,7 @@ pub struct Top {
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub enum TopQuantity {
     // A parenthesized expression. MSSQL only.
-    Expr(Expr),
+    Expr(N<Expr>),
     // An unparenthesized integer constant.
     Constant(u64),
 }
@@ -1354,7 +1354,7 @@ pub struct Values {
     /// Was there an explicit ROWs keyword (MySQL)?
     /// <https://dev.mysql.com/doc/refman/8.0/en/values.html>
     pub explicit_row: bool,
-    pub rows: Vec<Vec<Expr>>,
+    pub rows: Vec<Vec<N<Expr>>>,
 }
 
 impl fmt::Display for Values {
@@ -1402,7 +1402,7 @@ pub enum GroupByExpr {
     All,
 
     /// Expressions
-    Expressions(Vec<Expr>),
+    Expressions(Vec<N<Expr>>),
 }
 
 impl fmt::Display for GroupByExpr {

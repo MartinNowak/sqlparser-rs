@@ -170,7 +170,7 @@ impl<'a> Parser<'a> {
             Some(Keyword::NOBYPASSRLS) => RoleOption::BypassRLS(false),
             Some(Keyword::CONNECTION) => {
                 self.expect_keyword(Keyword::LIMIT)?;
-                RoleOption::ConnectionLimit(Expr::Value(self.parse_number_value()?))
+                RoleOption::ConnectionLimit(self.node(|p| p.parse_number_value().map(Expr::Value))?)
             }
             Some(Keyword::CREATEDB) => RoleOption::CreateDB(true),
             Some(Keyword::NOCREATEDB) => RoleOption::CreateDB(false),
@@ -184,7 +184,7 @@ impl<'a> Parser<'a> {
                 let password = if self.parse_keyword(Keyword::NULL) {
                     Password::NullPassword
                 } else {
-                    Password::Password(Expr::Value(self.parse_value()?))
+                    Password::Password(self.node(|p| p.parse_value().map(Expr::Value))?)
                 };
                 RoleOption::Password(password)
             }
@@ -194,7 +194,7 @@ impl<'a> Parser<'a> {
             Some(Keyword::NOSUPERUSER) => RoleOption::SuperUser(false),
             Some(Keyword::VALID) => {
                 self.expect_keyword(Keyword::UNTIL)?;
-                RoleOption::ValidUntil(Expr::Value(self.parse_value()?))
+                RoleOption::ValidUntil(self.node(|p| p.parse_value().map(Expr::Value))?)
             }
             _ => self.expected("option", self.peek_token())?,
         };

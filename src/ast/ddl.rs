@@ -26,7 +26,7 @@ use sqlparser_derive::{Visit, VisitMut};
 use crate::ast::value::escape_single_quote_string;
 use crate::ast::{
     display_comma_separated, display_separated, DataType, Expr, Ident, ObjectName, SequenceOptions,
-    SqlOption,
+    SqlOption, Node,
 };
 use crate::tokenizer::Token;
 
@@ -104,8 +104,8 @@ pub enum AlterTableOperation {
     EnableTrigger { name: Ident },
     /// `RENAME TO PARTITION (partition=val)`
     RenamePartitions {
-        old_partitions: Vec<Expr>,
-        new_partitions: Vec<Expr>,
+        old_partitions: Vec<Node<Expr>>,
+        new_partitions: Vec<Node<Expr>>,
     },
     /// Add Partitions
     AddPartitions {
@@ -113,7 +113,7 @@ pub enum AlterTableOperation {
         new_partitions: Vec<Partition>,
     },
     DropPartitions {
-        partitions: Vec<Expr>,
+        partitions: Vec<Node<Expr>>,
         if_exists: bool,
     },
     /// `RENAME [ COLUMN ] <old_column_name> TO <new_column_name>`
@@ -316,14 +316,14 @@ pub enum AlterColumnOperation {
     /// `DROP NOT NULL`
     DropNotNull,
     /// `SET DEFAULT <expr>`
-    SetDefault { value: Expr },
+    SetDefault { value: Node<Expr> },
     /// `DROP DEFAULT`
     DropDefault,
     /// `[SET DATA] TYPE <data_type> [USING <expr>]`
     SetDataType {
         data_type: DataType,
         /// PostgreSQL specific
-        using: Option<Expr>,
+        using: Option<Node<Expr>>,
     },
     /// `ADD GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( sequence_options ) ]`
     ///
@@ -409,7 +409,7 @@ pub enum TableConstraint {
     /// `[ CONSTRAINT <name> ] CHECK (<expr>)`
     Check {
         name: Option<Ident>,
-        expr: Box<Expr>,
+        expr: Box<Node<Expr>>,
     },
     /// MySQLs [index definition][1] for index creation. Not present on ANSI so, for now, the usage
     /// is restricted to MySQL, as no other dialects that support this syntax were found.
@@ -732,7 +732,7 @@ pub enum ColumnOption {
     /// `NOT NULL`
     NotNull,
     /// `DEFAULT <restricted-expr>`
-    Default(Expr),
+    Default(Node<Expr>),
     /// `{ PRIMARY KEY | UNIQUE } [<constraint_characteristics>]`
     Unique {
         is_primary: bool,
@@ -753,20 +753,20 @@ pub enum ColumnOption {
         characteristics: Option<ConstraintCharacteristics>,
     },
     /// `CHECK (<expr>)`
-    Check(Expr),
+    Check(Node<Expr>),
     /// Dialect-specific options, such as:
     /// - MySQL's `AUTO_INCREMENT` or SQLite's `AUTOINCREMENT`
     /// - ...
     DialectSpecific(Vec<Token>),
     CharacterSet(ObjectName),
     Comment(String),
-    OnUpdate(Expr),
+    OnUpdate(Node<Expr>),
     /// `Generated`s are modifiers that follow a column definition in a `CREATE
     /// TABLE` statement.
     Generated {
         generated_as: GeneratedAs,
         sequence_options: Option<Vec<SequenceOptions>>,
-        generation_expr: Option<Expr>,
+        generation_expr: Option<Node<Expr>>,
         generation_expr_mode: Option<GeneratedExpressionMode>,
         /// false if 'GENERATED ALWAYS' is skipped (option starts with AS)
         generated_keyword: bool,
@@ -1059,7 +1059,7 @@ impl fmt::Display for UserDefinedTypeCompositeAttributeDef {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
 pub struct Partition {
-    pub partitions: Vec<Expr>,
+    pub partitions: Vec<Node<Expr>>,
 }
 
 impl fmt::Display for Partition {
