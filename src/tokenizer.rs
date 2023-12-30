@@ -369,9 +369,9 @@ impl fmt::Display for Whitespace {
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Location {
     /// Line number, starting from 1
-    pub line: u64,
+    pub line: u32,
     /// Line column, starting from 1
-    pub column: u64,
+    pub column: u32,
 }
 
 /// Location range in input string
@@ -423,7 +423,7 @@ pub struct TokenWithLocation {
 }
 
 impl TokenWithLocation {
-    pub fn new(token: Token, line: u64, column: u64) -> TokenWithLocation {
+    pub fn new(token: Token, line: u32, column: u32) -> TokenWithLocation {
         TokenWithLocation {
             token,
             location: Location { line, column },
@@ -471,8 +471,8 @@ impl std::error::Error for TokenizerError {}
 
 struct State<'a> {
     peekable: Peekable<Chars<'a>>,
-    pub line: u64,
-    pub col: u64,
+    pub line: u32,
+    pub col: u32,
 }
 
 impl<'a> State<'a> {
