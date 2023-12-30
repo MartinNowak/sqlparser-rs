@@ -25,6 +25,7 @@ std = []
 # Enable JSON output in the `cli` example:
 json_example = ["serde_json", "serde"]
 visitor = ["sqlparser_derive"]
+ast_locs = ["ast_nodes"]
 ast_nodes = []
 
 [dependencies]

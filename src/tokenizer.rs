@@ -374,6 +374,15 @@ pub struct Location {
     pub column: u64,
 }
 
+/// Location range in input string
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub struct Range {
+    /// Begin of location rage
+    pub beg: Location,
+    /// End of location rage
+    pub end: Location,
+}
+
 impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.line == 0 {
@@ -384,6 +393,24 @@ impl fmt::Display for Location {
             // TODO: use standard compiler location syntax (<path>:<line>:<col>)
             " at Line: {}, Column {}",
             self.line, self.column,
+        )
+    }
+}
+
+impl fmt::Display for Range {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.beg.line == 0 {
+            return self.end.fmt(f);
+        }
+        if self.end.line == 0 {
+            return self.beg.fmt(f);
+        }
+        write!(
+            f,
+            // TODO: use standard compiler location syntax (<path>:<line>:<col>)
+            " between {}:{} and {}:{}",
+            self.beg.line, self.beg.column,
+            self.end.line, self.end.column,
         )
     }
 }

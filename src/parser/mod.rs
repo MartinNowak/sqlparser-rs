@@ -262,7 +262,10 @@ pub struct Parser<'a> {
     index: usize,
     /// node_id sequence
     #[cfg(feature = "ast_nodes")]
-    node_id: NodeID,
+    pub node_id: NodeID,
+    /// AST locations
+    #[cfg(feature = "ast_locs")]
+    pub locs: Vec<Range>,
     /// The current dialect to use
     dialect: &'a dyn Dialect,
     /// Additional options that allow you to mix & match behavior
@@ -295,6 +298,8 @@ impl<'a> Parser<'a> {
             index: 0,
             #[cfg(feature = "ast_nodes")]
             node_id: NodeID::default(),
+            #[cfg(feature = "ast_locs")]
+            locs: vec![],
             dialect,
             recursion_counter: RecursionCounter::new(DEFAULT_REMAINING_DEPTH),
             options: ParserOptions::default(),
@@ -9587,12 +9592,20 @@ impl<'a> Parser<'a> {
     #[cfg(feature = "ast_nodes")]
     fn beg_node(&mut self, _loc: Location) -> NodeID {
         let res = self.node_id.clone();
+        #[cfg(feature = "ast_locs")]
+        assert!(self.locs.len() == res.0 as usize);
+        #[cfg(feature = "ast_locs")]
+        self.locs.push(Range {beg: _loc, end: Location { line: 0, column: 0 }});
         self.node_id.next();
         res
     }
 
     #[cfg(feature = "ast_nodes")]
-    fn end_node<T: fmt::Display>(&self, node_id: NodeID, elem: T, _loc: Location) -> Node<T> {
+    fn end_node<T: fmt::Display>(&mut self, node_id: NodeID, elem: T, _loc: Location) -> Node<T> {
+        #[cfg(feature = "ast_locs")]
+        {
+            self.locs[node_id.0 as usize].end = _loc;
+        }
         Node { id: node_id, elem }
     }
 

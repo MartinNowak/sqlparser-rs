@@ -82,7 +82,7 @@ pub struct Node<T> {
 
 #[cfg(feature = "ast_nodes")]
 #[derive(Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct NodeID(u32);
+pub struct NodeID(pub u32);
 
 #[cfg(feature = "ast_nodes")]
 impl NodeID {
